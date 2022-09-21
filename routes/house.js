@@ -7,6 +7,7 @@ const {
   deleteHouse,
   updateStatus,
   searchByLocation,
+  filterHouse,
   upload,
 } = require("../controller/house");
 
@@ -17,6 +18,8 @@ const router = express.Router({ mergeParams: true });
 router.route("/houses").get(getAllHouses);
 
 router.route("/houses/search").get(searchByLocation);
+
+router.route("/houses/filter").get(filterHouse);
 
 router.route("/house/:id").get(getHouse);
 

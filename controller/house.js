@@ -9,7 +9,10 @@ const { Op } = require("sequelize");
 
 exports.getAllHouses = async (req, res) => {
   try {
-    const houses = await House.findAll({ include: [{ model: User }] });
+    const houses = await House.findAll({
+      where: { status: true },
+      include: [{ model: User }],
+    });
 
     return res.status(200).json({ houses });
   } catch (err) {
@@ -20,12 +23,10 @@ exports.getAllHouses = async (req, res) => {
 exports.getHouse = async (req, res) => {
   try {
     const id = req.params.id;
-    console.log(id);
     const house = await House.findOne({
-      where: { id },
+      where: { id, status: true },
       include: [{ model: User }],
     });
-    console.log(house, "house");
     if (!house) {
       return res.status(400).json({
         msg: `House with ID ${id} does not exist`,
@@ -235,7 +236,7 @@ exports.searchByLocation = async (req, res) => {
 
   try {
     const houses = await House.findAll({
-      where: { location: { [Op.like]: "%" + searchParam + "%" } },
+      where: { location: { [Op.like]: "%" + searchParam + "%" }, status: true },
     });
 
     if (houses) {
@@ -245,6 +246,42 @@ exports.searchByLocation = async (req, res) => {
     return res.status(400).json({ msg: "Error Occurred" });
   } catch (err) {
     res.status(500).json({ msg: "Error while searching" });
+  }
+};
+
+exports.filterHouse = async (req, res) => {
+  let location;
+  location = req.query.location;
+  const locationLst = location.split(",");
+
+  let price;
+  price = req.query.price;
+  const priceLst = price.split(",");
+
+  let bedNo;
+  bedNo = req.query.bedNo;
+  const bedNoLst = bedNo.split(",");
+
+  let isGuestHouse = req.query.isGuestHouse;
+
+  // console.log(locationLst, priceLst, bedNoLst, isGuestHouse);
+
+  try {
+    const houses = await House.findAll({
+      where: {
+        location: { [Op.in]: locationLst },
+        monthlyPayment: {
+          [Op.or]: { [Op.gte]: priceLst[0] + 1, [Op.lte]: priceLst[1] - 1 },
+        },
+        bedNo: {
+          [Op.in]: bedNoLst,
+        },
+        guestHouse: isGuestHouse,
+      },
+    });
+    res.status(200).json({ msg: houses });
+  } catch (err) {
+    return res.status(500).json({ msg: "Error Occurred" });
   }
 };
 
