@@ -5,9 +5,11 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
+const { Op } = require("sequelize");
+
 exports.getAllHouses = async (req, res) => {
   try {
-    const houses = await House.findAll();
+    const houses = await House.findAll({ include: [{ model: User }] });
 
     return res.status(200).json({ houses });
   } catch (err) {
@@ -19,7 +21,10 @@ exports.getHouse = async (req, res) => {
   try {
     const id = req.params.id;
     console.log(id);
-    const house = await House.findOne({ where: { id } });
+    const house = await House.findOne({
+      where: { id },
+      include: [{ model: User }],
+    });
     console.log(house, "house");
     if (!house) {
       return res.status(400).json({
@@ -65,6 +70,46 @@ exports.createHouse = async (req, res) => {
       reviewStatus,
     } = req.body;
 
+    if (!bedNo) {
+      return res.status(400).json({ msg: "Bed Number is required" });
+    }
+
+    if (!location) {
+      return res.status(400).json({ msg: "Location is required" });
+    }
+
+    if (!floor) {
+      return res.status(400).json({ msg: "Floor is required" });
+    }
+
+    if (!monthlyPayment) {
+      return res.status(400).json({ msg: "Monthly Payment is required" });
+    }
+
+    if (!phoneNumber) {
+      return res.status(400).json({ msg: "Phone Number is required" });
+    }
+
+    if (!availabilityDate) {
+      return res.status(400).json({ msg: "Availability Date is required" });
+    }
+
+    if (!guestHouse) {
+      return res.status(400).json({ msg: "Guest House is required" });
+    }
+
+    if (!description) {
+      return res.status(400).json({ msg: "Description is required" });
+    }
+
+    if (!listingStatus) {
+      return res.status(400).json({ msg: "Listing Status is required" });
+    }
+
+    if (!reviewStatus) {
+      return res.status(400).json({ msg: "Review Status is required" });
+    }
+
     const house = await House.create({
       bedNo: bedNo,
       location: location,
@@ -102,14 +147,19 @@ exports.updateHouse = async (req, res) => {
 
   try {
     let house;
-    if (req.files) {
-      req.body.images = images;
-      house = await House.update(req.body, { where: { id: id } });
-    } else {
-      house = await House.update(req.body, { where: { id: id } });
-    }
-    if (house[0]) {
-      res.status(200).json({ msg: "Successfully Updated" });
+    house = await House.findOne({ where: { id } });
+    if (house) {
+      if (req.files) {
+        req.body.images = images;
+        house = await House.update(req.body, { where: { id: id } });
+      } else {
+        house = await House.update(req.body, { where: { id: id } });
+      }
+      if (house[0]) {
+        res.status(200).json({ msg: "House Updated Successfully" });
+      } else {
+        res.status(404).json({ msg: `House Update Failed` });
+      }
     } else {
       res.status(404).json({ msg: `House with ID ${id} not found` });
     }
@@ -141,7 +191,62 @@ exports.deleteHouse = async (req, res) => {
   }
 };
 
-exports.updateStatus = async (req, res) => {};
+exports.updateStatus = async (req, res) => {
+  const id = req.params.id;
+
+  try {
+    let house;
+    house = await House.findOne({ where: { id } });
+    if (house) {
+      if (req.body.listingStatus === "Submit") {
+        house = await House.update(
+          { listingStatus: "Submit" },
+          { where: { id: id } }
+        );
+        if (house[0]) {
+          return res.status(200).json({ msg: `Successfully Updated` });
+        } else {
+          return res.status(404).json({ msg: `House Update Failed` });
+        }
+      }
+      if (req.body.listingStatus === "Draft") {
+        house = await House.update(
+          { listingStatus: "Draft" },
+          { where: { id: id } }
+        );
+        if (house[0]) {
+          return res.status(200).json({ msg: `Successfully Updated` });
+        } else {
+          return res.status(404).json({ msg: `House Update Failed` });
+        }
+      }
+    } else {
+      return res.status(404).json({ msg: `House with ID ${id} not found.` });
+    }
+  } catch (err) {
+    return res.status(500).json({ msg: "Internal Server Error" });
+  }
+};
+
+// Search House by location
+
+exports.searchByLocation = async (req, res) => {
+  const searchParam = req.query.search;
+
+  try {
+    const houses = await House.findAll({
+      where: { location: { [Op.like]: "%" + searchParam + "%" } },
+    });
+
+    if (houses) {
+      return res.status(200).json({ msg: houses });
+    }
+
+    return res.status(400).json({ msg: "Error Occurred" });
+  } catch (err) {
+    res.status(500).json({ msg: "Error while searching" });
+  }
+};
 
 // Upload Image controller
 

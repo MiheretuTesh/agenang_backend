@@ -58,6 +58,21 @@ const updateUser = async (req, res) => {
   const id = req.params.id;
 
   try {
+    if (!name) {
+      res.status(400).json({ msg: "Name is required" });
+    }
+
+    if (!email) {
+      res.status(400).json({ msg: "Email is required" });
+    }
+
+    if (!password) {
+      res.status(400).json({ msg: "Password is required" });
+    }
+
+    if (!phoneNumber) {
+      res.status(400).json({ msg: "Phone Number is required" });
+    }
     const user = await User.update(
       {
         name: name,
@@ -68,7 +83,7 @@ const updateUser = async (req, res) => {
       { where: { id: id } }
     );
     if (user[0]) {
-      res.status(200).json({ msg: "Successfully Updated" });
+      res.status(200).json({ msg: "User Updated Successfully" });
     } else {
       res.status(404).json({ msg: "User does not exist" });
     }
