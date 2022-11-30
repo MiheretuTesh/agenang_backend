@@ -9,6 +9,7 @@ const {
   searchByLocation,
   filterHouse,
   upload,
+  uploadHouseImages,
 } = require("../controller/house");
 
 const { protect } = require("../middleware/auth");
@@ -23,7 +24,9 @@ router.route("/houses/filter").get(filterHouse);
 
 router.route("/house/:id").get(getHouse);
 
-router.route("/house").post(protect, upload, createHouse);
+router.route("/house").post(protect, createHouse);
+
+router.route("/uploadHouseImages").post(protect, uploadHouseImages);
 
 router.route("/house/:id").put(protect, updateHouse);
 

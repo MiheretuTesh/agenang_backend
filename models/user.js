@@ -15,44 +15,44 @@ const User = sequelize.define(
   {
     name: {
       type: Sequelize.STRING,
-      allowNull: false,
-      validate: {
-        notNull: {
-          msg: "Please enter your name",
-        },
-      },
+      // allowNull: false,
+      // validate: {
+      //   notNull: {
+      //     msg: "Please enter your name",
+      //   },
+      // },
     },
     email: {
       type: Sequelize.STRING,
       unique: true,
-      allowNull: false,
-      validate: {
-        notNull: {
-          msg: "Please enter your email",
-        },
-      },
+      // allowNull: false,
+      // validate: {
+      //   notNull: {
+      //     msg: "Please enter your email",
+      //   },
+      // },
     },
-    password: {
-      type: Sequelize.STRING,
-      allowNull: false,
-      validate: {
-        notNull: {
-          msg: "Please password",
-        },
-      },
-    },
+    // password: {
+    //   type: Sequelize.STRING,
+    //   allowNull: false,
+    //   validate: {
+    //     notNull: {
+    //       msg: "Please password",
+    //     },
+    //   },
+    // },
     phoneNumber: {
       type: Sequelize.STRING,
       unique: true,
-      allowNull: false,
-      validate: {
-        notNull: {
-          msg: "Please enter your phone number",
-        },
-      },
+      // allowNull: false,
+      // validate: {
+      //   notNull: {
+      //     msg: "Please enter your phone number",
+      //   },
+      // },
     },
-    image: {
-      type: Sequelize.BLOB,
+    photo: {
+      type: Sequelize.STRING,
     },
     status: {
       type: Sequelize.BOOLEAN,

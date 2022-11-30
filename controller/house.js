@@ -14,6 +14,19 @@ exports.getAllHouses = async (req, res) => {
       include: [{ model: User }],
     });
 
+    let images = [];
+    houses.forEach((house) => {
+      if (house.images) {
+        images = house.images.split(",");
+        delete house.images;
+        house.images = images;
+      }
+    });
+
+    houses.sort(function (a, b) {
+      return new Date(b.updatedAt) - new Date(a.updatedAt);
+    });
+
     return res.status(200).json({ houses });
   } catch (err) {
     return res.status(500).json({ msg: "Internal server error" });
@@ -40,15 +53,24 @@ exports.getHouse = async (req, res) => {
   }
 };
 
+let houseId;
+
 exports.createHouse = async (req, res) => {
   req.body.userId = req.user.id;
 
-  const temp = [];
-  for (let i = 0; i < req.files.length; i++) {
-    const imageName = req.files[i].path.split("\\");
-    temp.push(imageName[imageName.length - 1]);
-  }
-  const images = temp.join();
+  // const temp = [];
+  // let images;
+
+  // if (req.files) {
+  // for (let i = 0; i < req.files.length; i++) {
+  //   const imageName = req.files[i].path.split("\\");
+  //   temp.push(imageName[imageName.length - 1]);
+  // }
+  // images = temp.join();
+  // }
+  // else {
+  // }
+
   const id = req.body.userId;
   try {
     const user = await User.findOne({ where: id });
@@ -65,10 +87,10 @@ exports.createHouse = async (req, res) => {
       availabilityDate,
       guestHouse,
       description,
-      status,
       userId,
       listingStatus,
       reviewStatus,
+      images,
     } = req.body;
 
     if (!bedNo) {
@@ -95,10 +117,6 @@ exports.createHouse = async (req, res) => {
       return res.status(400).json({ msg: "Availability Date is required" });
     }
 
-    if (!guestHouse) {
-      return res.status(400).json({ msg: "Guest House is required" });
-    }
-
     if (!description) {
       return res.status(400).json({ msg: "Description is required" });
     }
@@ -120,42 +138,61 @@ exports.createHouse = async (req, res) => {
       availabilityDate: availabilityDate,
       guestHouse: guestHouse,
       description: description,
-      status: status,
       userId: userId,
       listingStatus: listingStatus,
       reviewStatus: reviewStatus,
-      images: images,
+      images: images ? images : "",
     });
+
+    houseId = house.id.toString();
 
     return res.status(200).json({ house });
   } catch (err) {
-    return res.status(500).json({ msg: "Internal server error" });
+    console.log(err);
+    return res.status(500).json({ msg: "Internal server error", error: err });
   }
 };
 
 exports.updateHouse = async (req, res) => {
   const id = req.params.id;
 
-  let temp = [];
-  let images;
-  if (req.files) {
-    for (let i = 0; i < req.files.length; i++) {
-      const imageName = req.files[i].path.split("\\");
-      temp.push(imageName[imageName.length - 1]);
-    }
-  }
-  images = temp.join();
+  // let temp = [];
+  // let images;
+  // if (req.files) {
+  //   for (let i = 0; i < req.files.length; i++) {
+  //     const imageName = req.files[i].path.split("\\");
+  //     temp.push(imageName[imageName.length - 1]);
+  //   }
+  // }
+  // images = temp.join();
 
   try {
     let house;
     house = await House.findOne({ where: { id } });
     if (house) {
-      if (req.files) {
-        req.body.images = images;
-        house = await House.update(req.body, { where: { id: id } });
-      } else {
-        house = await House.update(req.body, { where: { id: id } });
-      }
+      // if (req.body.houseImageUpdated) {
+      //   console.log(id);
+      //   const images = house.images.split(",");
+
+      // images.forEach((image) => {
+      //   fs.unlinkSync(
+      //     "./public/images/" + req.user.email + "/" + req.user.email + image,
+      //     (err) => {
+      //       if (err) {
+      //         res.status(500).json({ msg: "Couldn't delete file." + err });
+      //       }
+      //       console.log("Delete File successfully.");
+      //     }
+      //   );
+      // });
+      // }
+      house = await House.update(req.body, { where: { id: id } });
+      // if (req.files) {
+      //   req.body.images = images;
+      //   house = await House.update(req.body, { where: { id: id } });
+      // } else {
+      //   house = await House.update(req.body, { where: { id: id } });
+      // }
       if (house[0]) {
         res.status(200).json({ msg: "House Updated Successfully" });
       } else {
@@ -264,8 +301,6 @@ exports.filterHouse = async (req, res) => {
 
   let isGuestHouse = req.query.isGuestHouse;
 
-  // console.log(locationLst, priceLst, bedNoLst, isGuestHouse);
-
   try {
     const houses = await House.findAll({
       where: {
@@ -287,28 +322,58 @@ exports.filterHouse = async (req, res) => {
 
 // Upload Image controller
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    fs.mkdir(path.join("public/images", req.user.email), function () {
-      cb(null, path.join("public/images", req.user.email));
-    });
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname));
-  },
-});
+exports.uploadHouseImages = async (req, res) => {
+  const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+      fs.mkdir(
+        path.join(
+          "public/images",
+          req.user.email ? req.user.email : req.user.phoneNumber
+        ),
+        function () {
+          cb(
+            null,
+            path.join(
+              "public/images",
+              req.user.email ? req.user.email : req.user.phoneNumber
+            )
+          );
+        }
+      );
+    },
+    filename: (req, file, cb) => {
+      console.log(path.basename(file.originalname), req.body.houseId);
+      cb(
+        null,
+        req.user.email
+          ? req.user.email
+          : req.user.phoneNumber + path.basename(file.originalname)
+        // + path.extname(file.originalname)
+      );
+    },
+  });
 
-exports.upload = multer({
-  storage: storage,
-  limits: { fileSize: 1000000 },
-  fileFilter: (req, file, cb) => {
-    const fileTypes = /jpeg|jpg|png|gif/;
-    const mimeType = fileTypes.test(file.mimetype);
-    const extname = fileTypes.test(path.extname(file.originalname));
+  const upload = multer({
+    storage: storage,
+    limits: { fileSize: 1000000 },
+    fileFilter: (req, file, cb) => {
+      const fileTypes = /jpeg|jpg|png|gif/;
+      const mimeType = fileTypes.test(file.mimetype);
+      const extname = fileTypes.test(path.extname(file.originalname));
 
-    if (mimeType && extname) {
-      return cb(null, true);
+      if (mimeType && extname) {
+        return cb(null, true);
+      }
+      cb("Give proper files formate to upload");
+    },
+  }).array("files[]", 6);
+  upload(req, res, function (err) {
+    if (err) {
+      console.log(err);
+    } else {
+      console.log(req.file, "req.file");
+
+      res.send("Success");
     }
-    cb("Give proper files formate to upload");
-  },
-}).array("images", 6);
+  });
+};
